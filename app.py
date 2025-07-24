@@ -1,21 +1,18 @@
 import streamlit as st
-import openai
+import requests
 import fitz  # PyMuPDF
 import docx
 
-st.title("GenAI Observation & Risk Extractor")
+st.title("GenAI Observation & Risk Extractor (Free via Together AI)")
 
-# Step 1: Get API key from Streamlit secrets
-openai_api_key = st.secrets.get("OPENAI_API_KEY")
+together_api_key = st.secrets.get("TOGETHER_API_KEY")
 
-if not openai_api_key:
-    st.error("❌ OpenAI API key not found. Please add it under Streamlit Secrets.")
+if not together_api_key:
+    st.error("❌ Together AI API key not found. Please add it under Streamlit Secrets.")
     st.stop()
 
-# Step 2: Upload file
 uploaded_file = st.file_uploader("Upload a PDF or DOCX file", type=["pdf", "docx"])
 
-# Step 3: Extract text
 def extract_text(file):
     if file.name.lower().endswith(".pdf"):
         doc = fitz.open(stream=file.read(), filetype="pdf")
@@ -25,14 +22,13 @@ def extract_text(file):
         return "\n".join(p.text for p in doc.paragraphs)
     return ""
 
-# Step 4: Analyze using OpenAI SDK v1 style
-def analyze_text(text):
+def analyze_text_with_together(text, api_key):
     prompt = f"""
 You are a product assessment analyst. Given stakeholder notes or project documents, extract:
 
-- Observation  
-- Associated risk  
-- Suggested recommendation  
+- Observation
+- Associated risk
+- Suggested recommendation
 - Category (like Architecture, Infra, Roadmap, etc.)
 
 Return it in markdown table format with columns: Category, Observation, Risk, Recommendation.
@@ -40,25 +36,31 @@ Return it in markdown table format with columns: Category, Observation, Risk, Re
 Text to analyze:
 {text[:4000]}
 """
-
-    client = openai.OpenAI(api_key=openai_api_key)
-
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
+    url = "https://api.together.xyz/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+        "messages": [
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": prompt}
         ],
-        temperature=0
-    )
-    return response.choices[0].message.content
+        "temperature": 0.3,
+        "max_tokens": 1024
+    }
+    res = requests.post(url, headers=headers, json=payload)
+    if res.status_code == 200:
+        return res.json()["choices"][0]["message"]["content"]
+    else:
+        return f"❌ Error: {res.status_code} - {res.text}"
 
-# Step 5: Run app logic
 if uploaded_file:
-    with st.spinner("Extracting and analyzing document..."):
-        extracted_text = extract_text(uploaded_file)
-        if not extracted_text.strip():
+    with st.spinner("Extracting and analyzing..."):
+        text = extract_text(uploaded_file)
+        if not text.strip():
             st.error("❌ No readable text found in the document.")
         else:
-            result = analyze_text(extracted_text)
-            st.markdown(result)
+            output = analyze_text_with_together(text, together_api_key)
+            st.markdown(output)
