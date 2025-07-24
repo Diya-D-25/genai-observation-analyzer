@@ -12,8 +12,6 @@ if not openai_api_key:
     st.error("❌ OpenAI API key not found. Please add it under Streamlit Secrets.")
     st.stop()
 
-openai.api_key = openai_api_key
-
 # Step 2: Upload file
 uploaded_file = st.file_uploader("Upload a PDF or DOCX file", type=["pdf", "docx"])
 
@@ -27,7 +25,7 @@ def extract_text(file):
         return "\n".join(p.text for p in doc.paragraphs)
     return ""
 
-# Step 4: Analyze with OpenAI
+# Step 4: Analyze using OpenAI SDK v1 style
 def analyze_text(text):
     prompt = f"""
 You are a product assessment analyst. Given stakeholder notes or project documents, extract:
@@ -43,7 +41,9 @@ Text to analyze:
 {text[:4000]}
 """
 
-    response = openai.ChatCompletion.create(
+    client = openai.OpenAI(api_key=openai_api_key)
+
+    response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
@@ -51,9 +51,9 @@ Text to analyze:
         ],
         temperature=0
     )
-    return response['choices'][0]['message']['content']
+    return response.choices[0].message.content
 
-# Step 5: Run app
+# Step 5: Run app logic
 if uploaded_file:
     with st.spinner("Extracting and analyzing document..."):
         extracted_text = extract_text(uploaded_file)
