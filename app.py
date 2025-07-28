@@ -29,12 +29,12 @@ You are a product assessment analyst. Given stakeholder notes or project documen
 - Observation
 - Associated risk
 - Suggested recommendation
-- Category (like Architecture, Infra, Roadmap, etc.)
+- Category (like Architecture, Infra, Roadmap, Product, Operating Model, SDLC etc.)
 
 Return it in markdown table format with columns: Category, Observation, Risk, Recommendation.
 
 Text to analyze:
-{text[:4000]}
+{text}
 """
     url = "https://api.together.xyz/v1/chat/completions"
     headers = {
