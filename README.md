@@ -1,14 +1,38 @@
-# GenAI Observation & Risk Extractor
+A lightweight Streamlit app to extract Observations, Risks, and Recommendations from uploaded PDF or DOCX documents using Together AI's free Mixtral-8x7B-Instruct model.
 
-Upload PDFs or DOCX files and get a markdown table of:
-- Category (e.g., Infra, Architecture, Support Model)
-- Observations
-- Risks
-- Recommendations
+⚙️ Features
+Upload PDF or DOCX files
 
-## ▶️ Deploy on Streamlit Cloud
+Extracts text using PyMuPDF or python-docx
 
-1. Create a GitHub repo named `genai-observation-analyzer` and upload these files.
-2. Sign in to Streamlit Cloud, connect GitHub, and deploy this repo.
-3. In "Secrets", add `OPENAI_API_KEY` = your OpenAI key.
-4. Run the app and upload a document to see insights!
+Sends prompt to Together AI to generate:
+
+✅ Observation
+
+⚠️ Risk
+
+💡 Recommendation
+
+📁 Category (e.g. Architecture, Infra, Roadmap)
+
+Renders results in a clean markdown table
+
+🧱 Tech Stack
+LLM: Together AI – Mixtral-8x7B-Instruct
+
+Frontend: Streamlit
+
+Parsing: PyMuPDF, python-docx
+
+Hosting: Streamlit Cloud (Free)
+
+🔐 Setup Instructions
+Upload app.py and requirements.txt to a GitHub repo
+
+Deploy via Streamlit Cloud
+
+In Streamlit Secrets, add:
+
+toml
+Copy
+Edit
