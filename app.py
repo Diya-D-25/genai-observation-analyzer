@@ -24,21 +24,37 @@ def extract_text(file):
 
 def analyze_text_with_together(text, api_key):
     prompt = f"""
-You are a senior technology and product strategy consultant. Carefully read the document below, and extract well-thought-out insights that would help assess the maturity, quality, and risks associated with the product, technology, processes, or operations described.
+You are a senior product and technology strategy consultant reviewing a document to extract detailed insights across product, engineering, architecture, and operations.
 
-Your task is to produce a **structured table** with the following columns:
+Your task is to analyze the document deeply and return a **structured table** with the following 4 columns:
+- **Category**: Accurately determine the most appropriate category from the following:  
+  1. Product Roadmap and Overview  
+  2. Architecture & Tech Stack
+  3. Operating Model  
+  4. SDLC & SMART Practices
+  5. Cost Management  
+  6. Cloud Infrastructure   
+  7. Governance & Decision-Making  
+  If none of the above are relevant, create a new fitting category.
+  
+- **Observation**: Describe the situation or insight clearly and specifically — reflect strategic gaps, inefficiencies, fragmentation, misalignments, or decisions made.
 
-- **Category**: Identify the right category for each insight based on the content (e.g., Architecture, Infrastructure, Tech Stack  DevOps, Product Roadmap, Integration, Data, Cost Management, Operating Model, etc.). You are free to define categories — do not limit yourself to predefined ones.
-- **Observation**: A specific, clearly stated insight derived from the content. Think critically — go beyond surface-level facts and highlight patterns, inefficiencies, or notable decisions.
-- **Associated Risk**: Write a **detailed explanation** of the risk or downside associated with the observation. Go deep — explain the **root cause**, **potential impact**, **which stakeholder it affects**, and **how it could evolve if not addressed**. Avoid one-word or generic risks. This could include strategic misalignment, scalability issues, technical debt, unclear ownership, or dependency risks.
-- **Recommendation**: Provide a concise, practical, and executive-level recommendation to address the risk or improve the current state.
+- **Risk**: Go beyond surface risks — analyze **root causes**, **long-term business or operational impact**, and **stakeholders affected**.
 
-**Additional guidelines**:
-- Read the full document deeply and extract as many relevant insights as possible — do not be brief or superficial.
-- Ensure your tone is professional, analytical, and suitable for a consulting or due diligence report.
-- Use a markdown table for the output with the headers: `Category | Observation | Risk | Recommendation`.
-- Only include meaningful insights — avoid generic or vague entries.
-- Aim for both quality and quantity, do not omit valid observations.
+- **Recommendation**: Provide a **strong, actionable**, and **consulting-grade** recommendation. Tie it to improvement levers like ROI, cost reduction, operational maturity, architecture optimization, backlog management, etc.
+
+**Example of expected output**:
+
+| Category | Observation | Risk | Recommendation |
+|----------|-------------|------|----------------|
+| Product Roadmap and Strategy | No formalized product strategy observed. Development is reactive and driven by immediate business needs, resulting in fragmented product capabilities. | Fragmented systems and misaligned feature development can lead to increased tech debt, higher long-term costs, and inability to scale. | Create a three-year roadmap with quarterly goals linked to business outcomes. Define vision, key bets, success metrics, and governance structure to guide structured growth. |
+
+**Instructions**:
+- Thoroughly analyze the entire document — don't skip or skim.
+- Think like a consultant preparing for a tech due diligence or CXO-level workshop.
+- Ensure that **each entry has business or architectural relevance**.
+- Tone must be clear, professional, and executive-ready.
+- Output only the markdown table, without explanations or headers.
 
 Text to analyze:
 {text}
