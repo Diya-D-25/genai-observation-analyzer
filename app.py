@@ -24,14 +24,23 @@ def extract_text(file):
 
 def analyze_text_with_together(text, api_key):
     prompt = f"""
-You are a product assessment analyst. Given stakeholder notes or project documents, extract:
+You are an experienced technology consultant reviewing a project document or stakeholder input file. Your task is to extract insights that will help assess the quality, risks, and maturity of the product or technology landscape described.
 
-- Observation
-- Associated risk
-- Suggested recommendation
-- Category (like Architecture, Infra, Roadmap, Product, Operating Model, SDLC etc.)
+Please analyze the entire text carefully and return the following:
 
-Return it in markdown table format with columns: Category, Observation, Risk, Recommendation.
+- **Category**: Identify appropriate categories on your own (e.g., Architecture, Infrastructure, Data Strategy, DevOps, Product Roadmap, Cost Management, Tech Stack, Integration, Security, etc.) based on the content — do NOT limit yourself to predefined categories.
+- **Observation**: A concise yet specific statement summarizing a key finding or fact from the document.
+- **Associated Risk**: Any potential issue, inefficiency, or gap linked to the observation.
+- **Recommendation**: A clear, actionable suggestion to address the risk or improve the current state.
+
+**Return the output in a clean markdown table** with the following columns:
+
+`Category | Observation | Risk | Recommendation`
+
+Ensure:
+- You go through the text thoroughly.
+- Output is written in a professional tone, suitable for inclusion in an executive-level consulting report.
+- Capture as many relevant rows as needed — do not limit yourself to only a few.
 
 Text to analyze:
 {text}
