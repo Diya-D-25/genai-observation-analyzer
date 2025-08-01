@@ -30,7 +30,7 @@ Your task is to produce a **structured table** with the following columns:
 
 - **Category**: Identify the right category for each insight based on the content (e.g., Architecture, Infrastructure, Tech Stack  DevOps, Product Roadmap, Integration, Data, Cost Management, Operating Model, etc.). You are free to define categories — do not limit yourself to predefined ones.
 - **Observation**: A specific, clearly stated insight derived from the content. Think critically — go beyond surface-level facts and highlight patterns, inefficiencies, or notable decisions.
-- **Associated Risk**: Describe any risk, inefficiency, or negative implication associated with the observation. This could include strategic misalignment, scalability issues, technical debt, unclear ownership, or dependency risks.
+- **Associated Risk**: Write a **detailed explanation** of the risk or downside associated with the observation. Go deep — explain the **root cause**, **potential impact**, **which stakeholder it affects**, and **how it could evolve if not addressed**. Avoid one-word or generic risks. This could include strategic misalignment, scalability issues, technical debt, unclear ownership, or dependency risks.
 - **Recommendation**: Provide a concise, practical, and executive-level recommendation to address the risk or improve the current state.
 
 **Additional guidelines**:
