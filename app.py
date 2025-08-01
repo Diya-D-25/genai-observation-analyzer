@@ -24,23 +24,21 @@ def extract_text(file):
 
 def analyze_text_with_together(text, api_key):
     prompt = f"""
-You are an experienced technology consultant reviewing a project document or stakeholder input file. Your task is to extract insights that will help assess the quality, risks, and maturity of the product or technology landscape described.
+You are a senior technology and product strategy consultant. Carefully read the document below, and extract well-thought-out insights that would help assess the maturity, quality, and risks associated with the product, technology, processes, or operations described.
 
-Please analyze the entire text carefully and return the following:
+Your task is to produce a **structured table** with the following columns:
 
-- **Category**: Identify appropriate categories on your own (e.g., Architecture, Infrastructure, Data Strategy, DevOps, Product Roadmap, Cost Management, Tech Stack, Integration, Security, etc.) based on the content — do NOT limit yourself to predefined categories.
-- **Observation**: A concise yet specific statement summarizing a key finding or fact from the document.
-- **Associated Risk**: Any potential issue, inefficiency, or gap linked to the observation.
-- **Recommendation**: A clear, actionable suggestion to address the risk or improve the current state.
+- **Category**: Identify the right category for each insight based on the content (e.g., Architecture, Infrastructure, Tech Stack  DevOps, Product Roadmap, Integration, Data, Cost Management, Operating Model, etc.). You are free to define categories — do not limit yourself to predefined ones.
+- **Observation**: A specific, clearly stated insight derived from the content. Think critically — go beyond surface-level facts and highlight patterns, inefficiencies, or notable decisions.
+- **Associated Risk**: Describe any risk, inefficiency, or negative implication associated with the observation. This could include strategic misalignment, scalability issues, technical debt, unclear ownership, or dependency risks.
+- **Recommendation**: Provide a concise, practical, and executive-level recommendation to address the risk or improve the current state.
 
-**Return the output in a clean markdown table** with the following columns:
-
-`Category | Observation | Risk | Recommendation`
-
-Ensure:
-- You go through the text thoroughly.
-- Output is written in a professional tone, suitable for inclusion in an executive-level consulting report.
-- Capture as many relevant rows as needed — do not limit yourself to only a few.
+**Additional guidelines**:
+- Read the full document deeply and extract as many relevant insights as possible — do not be brief or superficial.
+- Ensure your tone is professional, analytical, and suitable for a consulting or due diligence report.
+- Use a markdown table for the output with the headers: `Category | Observation | Risk | Recommendation`.
+- Only include meaningful insights — avoid generic or vague entries.
+- Aim for both quality and quantity, do not omit valid observations.
 
 Text to analyze:
 {text}
