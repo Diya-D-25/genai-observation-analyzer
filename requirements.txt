@@ -2,3 +2,7 @@ streamlit
 requests
 python-docx
 PyMuPDF
+pandas
+altair
+openpyxl
+python-pptx
