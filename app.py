@@ -3,7 +3,7 @@ import requests
 import fitz  # PyMuPDF
 import docx
 
-st.title("GenAI Observation & Risk Extractor (Enhanced)")
+st.title("GenAI Observation & Risk Extractor")
 
 # Load Together AI API key
 together_api_key = st.secrets.get("TOGETHER_API_KEY")
