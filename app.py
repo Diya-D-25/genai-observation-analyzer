@@ -554,7 +554,7 @@ with tabs[2]:
 # Sidebar: What-If Simulator (global)
 # -----------------------
 
-st.sidebar.header("What-If Simulator (Benchmark-Based)")
+st.sidebar.header("Benchmark Simulator")
 
 # Current headcounts input
 current_pms = st.sidebar.number_input("Current PM Count", min_value=0, value=6)
