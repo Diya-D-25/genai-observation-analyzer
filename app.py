@@ -114,7 +114,7 @@ def call_together(prompt, model="mistralai/Mixtral-8x7B-Instruct-v0.1", max_toke
         return f"❌ Error: {r.status_code} - {r.text}"
 
 # -----------------------
-# Prompts
+# Prompts (original ones retained)
 # -----------------------
 DOCUMENT_PROMPT_TEMPLATE = """
 You are a senior product and technology strategy consultant reviewing a document to extract detailed insights across product, engineering, architecture, and operations.
@@ -173,6 +173,71 @@ Incident rows:
 """
 
 # -----------------------
+# Additional prompts & constants (new)
+# -----------------------
+ENHANCE_FINDINGS_PROMPT = """
+You are a senior consulting analyst. Given the following findings table, add the following columns:
+- Severity (High, Medium, Low)
+- Time Horizon (Immediate, Short-term, Medium-term, Long-term)
+- Priority Type (Quick Win / Strategic)
+- Business KPIs (up to 3 relevant KPIs per recommendation, e.g., ROI, Operational Cost Reduction, Time-to-Market, Customer Satisfaction, Scalability, Risk Reduction)
+
+Keep all original columns, append the new ones at the end.
+Return only the enhanced markdown table.
+Table:
+{table}
+"""
+
+CORRELATION_PROMPT = """
+You are a senior consultant. Given the following datasets:
+1. Document Findings
+2. Incident Log Insights
+Identify:
+- Overlapping or related issues across datasets
+- Risks corroborated by multiple sources
+- Recommendations that address multiple issues simultaneously
+Return a concise markdown table: Theme | Linked Risks | Consolidated Recommendation | Impact
+Document Findings:
+{doc_findings}
+
+Incident Insights:
+{incident_findings}
+"""
+
+# Simple benchmark examples (extend as needed)
+BENCHMARKS = {
+    "dev_to_qa": (5, 1),  # dev:qa = 5:1
+    "pm_ba_dev_qa": (1, 1, 8, 2)  # pm:ba:dev:qa
+}
+
+# -----------------------
+# Helper: parse markdown table (moveable so other blocks can use it)
+# -----------------------
+def parse_markdown_table(md_text):
+    rows = [r for r in md_text.splitlines() if r.strip() != ""]
+    header_idx = None
+    for i, r in enumerate(rows):
+        if "|" in r and re.search(r"[A-Za-z]", r):
+            header_idx = i
+            break
+    if header_idx is None:
+        return pd.DataFrame()
+    header = [c.strip() for c in rows[header_idx].split("|") if c.strip() != ""]
+    data_start = header_idx + 1
+    if data_start < len(rows) and re.match(r'^\s*\|?\s*-+', rows[data_start]):
+        data_start += 1
+    data_rows = []
+    for r in rows[data_start:]:
+        # handle lines that may include | inside columns by limiting split
+        parts = [c.strip() for c in r.split("|") if c.strip() != ""]
+        if len(parts) == len(header):
+            data_rows.append(parts)
+    if not data_rows:
+        return pd.DataFrame()
+    df = pd.DataFrame(data_rows, columns=header)
+    return df
+
+# -----------------------
 # UI
 # -----------------------
 st.title("GenAI Consulting Assistant")
@@ -220,23 +285,28 @@ with tabs[0]:
         save_client_history(client_name, client_history)
 
 # -----------------------
-# TAB: Document Analysis
+# TAB: Document Analysis (modified to support multiple uploads + enhancement)
 # -----------------------
 with tabs[1]:
     st.header("Document Analysis")
-    uploaded = st.file_uploader("Upload PDF or DOCX (large files OK)", type=["pdf", "docx", "txt"])
-    if uploaded:
-        with st.spinner("Extracting text..."):
-            text = extract_text_file(uploaded)
-        if not text or not text.strip():
-            st.error("No readable text found in the uploaded file.")
-        else:
+    # allow multiple uploads (added functionality)
+    uploaded_files = st.file_uploader("Upload one or more documents (PDF/DOCX/TXT)", type=["pdf", "docx", "txt"], accept_multiple_files=True)
+    if uploaded_files:
+        all_findings = []
+        merged_texts_for_history = []
+        for uploaded in uploaded_files:
+            with st.spinner(f"Extracting text from {uploaded.name}..."):
+                text = extract_text_file(uploaded)
+            if not text or not text.strip():
+                st.warning(f"No readable text found in {uploaded.name}.")
+                continue
+
             chunks = chunk_text_words(text, chunk_words=3000, overlap_words=200)
-            st.info(f"Document split into {len(chunks)} chunks. Processing sequentially.")
+            st.info(f"{uploaded.name}: split into {len(chunks)} chunks. Processing sequentially.")
             merged_lines = []
             header_seen = False
             for idx, chunk in enumerate(chunks, start=1):
-                st.write(f"Analyzing chunk {idx}/{len(chunks)}...")
+                st.write(f"Analyzing {uploaded.name} — chunk {idx}/{len(chunks)}...")
                 prompt = DOCUMENT_PROMPT_TEMPLATE.format(text=chunk)
                 resp = call_together(prompt, max_tokens=1500)
                 if resp.startswith("❌ Error"):
@@ -247,7 +317,7 @@ with tabs[1]:
                     merged_lines.extend(lines)
                     header_seen = True
                 else:
-                    # try to skip header rows repeated in subsequent chunks
+                    # skip repeated header rows in subsequent chunks
                     if len(lines) >= 2 and re.match(r'^\s*\|?-+', lines[1]):
                         rows = [l for i_l, l in enumerate(lines) if i_l >= 2]
                         merged_lines.extend(rows)
@@ -258,51 +328,57 @@ with tabs[1]:
                             merged_lines.extend(lines)
 
             merged_text = "\n".join(merged_lines)
-            st.subheader("Merged Findings (markdown table)")
+            merged_texts_for_history.append({"name": uploaded.name, "text": merged_text})
+            st.subheader(f"Merged Findings for {uploaded.name} (markdown table)")
             st.markdown(merged_text)
-
-            # parse markdown table into DataFrame
-            def parse_markdown_table(md_text):
-                rows = [r for r in md_text.splitlines() if r.strip() != ""]
-                header_idx = None
-                for i, r in enumerate(rows):
-                    if "|" in r and re.search(r"[A-Za-z]", r):
-                        header_idx = i
-                        break
-                if header_idx is None:
-                    return pd.DataFrame()
-                header = [c.strip() for c in rows[header_idx].split("|") if c.strip() != ""]
-                data_start = header_idx + 1
-                if data_start < len(rows) and re.match(r'^\s*\|?\s*-+', rows[data_start]):
-                    data_start += 1
-                data_rows = []
-                for r in rows[data_start:]:
-                    parts = [c.strip() for c in r.split("|") if c.strip() != ""]
-                    if len(parts) == len(header):
-                        data_rows.append(parts)
-                if not data_rows:
-                    return pd.DataFrame()
-                df = pd.DataFrame(data_rows, columns=header)
-                return df
 
             df_findings = parse_markdown_table(merged_text)
             if not df_findings.empty:
-                st.subheader("Parsed Findings (table view)")
-                st.dataframe(df_findings)
+                df_findings["Source Document"] = uploaded.name
+                all_findings.append(df_findings)
 
-                # category count chart
-                if "Category" in df_findings.columns:
-                    cat_count = df_findings["Category"].value_counts().reset_index()
-                    cat_count.columns = ["Category", "Count"]
-                    chart = alt.Chart(cat_count).mark_bar().encode(
-                        x=alt.X("Category:N", sort='-y'),
-                        y="Count:Q",
-                        tooltip=["Category","Count"]
-                    ).properties(width=800, height=300)
-                    st.altair_chart(chart)
+        if all_findings:
+            # combined findings across uploaded files
+            df_combined = pd.concat(all_findings, ignore_index=True)
+            st.subheader("Combined Findings (parsed)")
+            st.dataframe(df_combined)
 
-            # store analysis in client history
-            client_history.setdefault("analyses", []).append({"type": "document", "ts": str(datetime.utcnow()), "result": merged_text})
+            # show category counts
+            if "Category" in df_combined.columns:
+                cat_count = df_combined["Category"].value_counts().reset_index()
+                cat_count.columns = ["Category", "Count"]
+                chart = alt.Chart(cat_count).mark_bar().encode(
+                    x=alt.X("Category:N", sort='-y'),
+                    y="Count:Q",
+                    tooltip=["Category","Count"]
+                ).properties(width=800, height=300)
+                st.altair_chart(chart)
+
+            # -----------------------
+            # Post-process: Severity, Time Horizon, Priority, Business KPIs
+            # -----------------------
+            st.subheader("Enhance findings: Severity, Priority & KPI linkage")
+            if st.button("Run Enhancement (Severity/Priority/KPIs)"):
+                # pass the markdown table to the enhancer prompt
+                table_md = df_combined.to_markdown(index=False)
+                enhance_prompt = ENHANCE_FINDINGS_PROMPT.format(table=table_md)
+                enhanced_md = call_together(enhance_prompt, max_tokens=1600)
+                if enhanced_md.startswith("❌ Error"):
+                    st.error(enhanced_md)
+                else:
+                    st.markdown(enhanced_md)
+                    # parse enhanced table and show dataframe if possible
+                    df_enhanced = parse_markdown_table(enhanced_md)
+                    if not df_enhanced.empty:
+                        st.subheader("Enhanced Findings (table view)")
+                        st.dataframe(df_enhanced)
+
+            # save combined findings to client history
+            client_history.setdefault("analyses", []).append({
+                "type": "document_combined",
+                "ts": str(datetime.utcnow()),
+                "result": df_combined.to_markdown(index=False)
+            })
             save_client_history(client_name, client_history)
 
 # -----------------------
@@ -432,3 +508,69 @@ with tabs[2]:
                 "llm_insights_md": full_insights_md
             })
             save_client_history(client_name, client_history)
+
+            # -----------------------
+            # Offer correlation and gap analysis linking incidents to document findings (if available)
+            # -----------------------
+            st.subheader("Cross-Source Correlation & Benchmarks")
+            if st.button("Run Cross-Source Correlation (Docs ↔ Incidents)"):
+                # fetch last document combined analysis for this client if present
+                doc_findings_md = ""
+                for a in reversed(client_history.get("analyses", [])):
+                    if a.get("type", "").startswith("document"):
+                        doc_findings_md = a.get("result", "")
+                        break
+                incident_findings_md = full_insights_md
+                corr_prompt = CORRELATION_PROMPT.format(doc_findings=doc_findings_md, incident_findings=incident_findings_md)
+                corr_resp = call_together(corr_prompt, max_tokens=1400)
+                if corr_resp.startswith("❌ Error"):
+                    st.error(corr_resp)
+                else:
+                    st.markdown("**Correlations and consolidated recommendations:**")
+                    st.markdown(corr_resp)
+
+            if st.checkbox("Run Gap-to-Benchmark Scoring (example checks)"):
+                # simple example: check for Dev:QA ratio in doc findings text
+                doc_text_for_search = ""
+                for a in reversed(client_history.get("analyses", [])):
+                    if a.get("type", "").startswith("document"):
+                        doc_text_for_search = a.get("result", "")
+                        break
+                if doc_text_for_search:
+                    # simple regex to find something like "35:9" or "35 : 9"
+                    m = re.search(r"(\d+)\s*[:]\s*(\d+)", doc_text_for_search)
+                    if m:
+                        num = int(m.group(1))
+                        den = int(m.group(2))
+                        if den != 0:
+                            current_ratio = num / den
+                            benchmark = BENCHMARKS["dev_to_qa"][0] / BENCHMARKS["dev_to_qa"][1]
+                            deviation = (current_ratio / benchmark - 1) * 100
+                            st.write(f"Detected ratio {num}:{den} -> {current_ratio:.2f}. Benchmark {BENCHMARKS['dev_to_qa'][0]}:{BENCHMARKS['dev_to_qa'][1]} -> {benchmark:.2f}. Deviation: {deviation:.1f}%")
+                    else:
+                        st.info("No simple dev:qa ratio pattern (e.g., '35:9') detected in last document findings.")
+
+# -----------------------
+# Sidebar: What-If Simulator (global)
+# -----------------------
+st.sidebar.header("What-If Simulator")
+st.sidebar.write("Simulate simple org & cost changes to estimate savings/impact.")
+current_pms = st.sidebar.number_input("Current PM count", min_value=0, value=6)
+target_pms = st.sidebar.number_input("Target PM count", min_value=0, value=3)
+pm_cost_per_year = st.sidebar.number_input("Cost per PM per year (₹ lakhs)", min_value=1, value=25)
+current_dev = st.sidebar.number_input("Current Developers", min_value=0, value=35)
+target_dev = st.sidebar.number_input("Target Developers", min_value=0, value=30)
+dev_cost_per_year = st.sidebar.number_input("Cost per Developer per year (₹ lakhs)", min_value=1, value=20)
+if st.sidebar.button("Simulate Savings"):
+    saved_pms = max(0, current_pms - target_pms)
+    saved_devs = max(0, current_dev - target_dev)
+    savings_pms = saved_pms * pm_cost_per_year
+    savings_devs = saved_devs * dev_cost_per_year
+    total_savings = savings_pms + savings_devs
+    st.sidebar.success(f"Projected annual savings: ₹{total_savings} Lakhs (PMs ₹{savings_pms} + Devs ₹{savings_devs})")
+    # show a small sensitivity output
+    st.sidebar.write(f"Saved headcount: PMs={saved_pms}, Devs={saved_devs}")
+
+# -----------------------
+# End of file
+# -----------------------
