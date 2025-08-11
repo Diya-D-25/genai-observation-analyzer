@@ -175,7 +175,7 @@ Incident rows:
 # -----------------------
 # UI
 # -----------------------
-st.title("GenAI Consulting Assistant — Full")
+st.title("GenAI Consulting Assistant")
 
 client_name = st.text_input("Client name (used to store history)", value="", max_chars=80)
 if not client_name:
@@ -223,7 +223,7 @@ with tabs[0]:
 # TAB: Document Analysis
 # -----------------------
 with tabs[1]:
-    st.header("Document Analysis (chunked, merged, consulting-grade)")
+    st.header("Document Analysis")
     uploaded = st.file_uploader("Upload PDF or DOCX (large files OK)", type=["pdf", "docx", "txt"])
     if uploaded:
         with st.spinner("Extracting text..."):
@@ -309,7 +309,7 @@ with tabs[1]:
 # TAB: Incident Logs
 # -----------------------
 with tabs[2]:
-    st.header("Incident Logs Analysis (chunked → merged → charts → LLM insights)")
+    st.header("Incident Logs Analysis")
     incident_file = st.file_uploader("Upload Incident Log (CSV/XLSX)", type=["csv","xlsx"])
     if incident_file:
         if incident_file.name.lower().endswith(".csv"):
@@ -403,7 +403,7 @@ with tabs[2]:
                 st.altair_chart(line)
 
             # Chunking incident rows and call LLM for deeper insights (in batches)
-            st.subheader("LLM-based Root Cause, Risks & Recommendations (chunked)")
+            st.subheader("LLM-based Root Cause, Risks & Recommendations")
             batch_rows = st.number_input("Batch rows per LLM call", min_value=50, max_value=2000, value=300, step=50)
             aggregated_tables = []
             table_texts = []
