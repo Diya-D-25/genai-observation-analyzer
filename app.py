@@ -553,23 +553,50 @@ with tabs[2]:
 # -----------------------
 # Sidebar: What-If Simulator (global)
 # -----------------------
-st.sidebar.header("What-If Simulator")
-st.sidebar.write("Simulate simple org & cost changes to estimate savings/impact.")
-current_pms = st.sidebar.number_input("Current PM count", min_value=0, value=6)
-target_pms = st.sidebar.number_input("Target PM count", min_value=0, value=3)
-pm_cost_per_year = st.sidebar.number_input("Cost per PM per year (₹ lakhs)", min_value=1, value=25)
-current_dev = st.sidebar.number_input("Current Developers", min_value=0, value=35)
-target_dev = st.sidebar.number_input("Target Developers", min_value=0, value=30)
-dev_cost_per_year = st.sidebar.number_input("Cost per Developer per year (₹ lakhs)", min_value=1, value=20)
-if st.sidebar.button("Simulate Savings"):
-    saved_pms = max(0, current_pms - target_pms)
-    saved_devs = max(0, current_dev - target_dev)
-    savings_pms = saved_pms * pm_cost_per_year
-    savings_devs = saved_devs * dev_cost_per_year
-    total_savings = savings_pms + savings_devs
-    st.sidebar.success(f"Projected annual savings: ₹{total_savings} Lakhs (PMs ₹{savings_pms} + Devs ₹{savings_devs})")
-    # show a small sensitivity output
-    st.sidebar.write(f"Saved headcount: PMs={saved_pms}, Devs={saved_devs}")
+
+st.sidebar.header("What-If Simulator (Benchmark-Based)")
+
+# Current headcounts input
+current_pms = st.sidebar.number_input("Current PM Count", min_value=0, value=6)
+current_bas = st.sidebar.number_input("Current BA Count", min_value=0, value=5)
+current_devs = st.sidebar.number_input("Current Dev Count", min_value=0, value=35)
+current_qas = st.sidebar.number_input("Current QA Count", min_value=0, value=9)
+
+# Cost inputs (Lakh ₹ per year)
+pm_cost = st.sidebar.number_input("Cost per PM (₹L)", min_value=0, value=25)
+ba_cost = st.sidebar.number_input("Cost per BA (₹L)", min_value=0, value=20)
+dev_cost = st.sidebar.number_input("Cost per Dev (₹L)", min_value=0, value=18)
+qa_cost = st.sidebar.number_input("Cost per QA (₹L)", min_value=0, value=15)
+
+if st.sidebar.button("Calculate Optimal Team"):
+    # Get benchmark ratios
+    bench_pm, bench_ba, bench_dev, bench_qa = BENCHMARKS["pm_ba_dev_qa"]
+
+    # Use Dev as scaling base for ratio
+    optimal_pms = round((current_devs / bench_dev) * bench_pm)
+    optimal_bas = round((current_devs / bench_dev) * bench_ba)
+    optimal_qas = round((current_devs / bench_dev) * bench_qa)
+
+    # Calculate reductions
+    pm_reduction = current_pms - optimal_pms
+    ba_reduction = current_bas - optimal_bas
+    qa_reduction = current_qas - optimal_qas
+
+    # Savings
+    total_savings = max(pm_reduction, 0) * pm_cost + \
+                    max(ba_reduction, 0) * ba_cost + \
+                    max(qa_reduction, 0) * qa_cost
+
+    st.sidebar.markdown("### Optimal Headcount vs Current")
+    st.sidebar.write(f"PMs: {current_pms} → {optimal_pms} ({pm_reduction:+})")
+    st.sidebar.write(f"BAs: {current_bas} → {optimal_bas} ({ba_reduction:+})")
+    st.sidebar.write(f"QAs: {current_qas} → {optimal_qas} ({qa_reduction:+})")
+
+    st.sidebar.markdown("### Projected Savings")
+    if total_savings > 0:
+        st.sidebar.success(f"₹{total_savings} Lakhs/year savings possible")
+    else:
+        st.sidebar.info("No cost savings — team is at or below benchmark size.")
 
 # -----------------------
 # End of file
