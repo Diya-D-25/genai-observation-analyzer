@@ -1,7 +1,21 @@
+# Core
 streamlit
 requests
+pandas
+numpy
+
+# File parsing
 PyMuPDF
 python-docx
-pandas
-matplotlib
 openpyxl
+tabulate
+
+# Visualization
+altair
+matplotlib
+
+# Date handling
+python-dateutil
+
+# Optional but useful for future enhancements
+scikit-learn
